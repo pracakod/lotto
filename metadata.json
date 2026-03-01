@@ -1,0 +1,5 @@
+{
+  "name": "Lotto Data Scientist AI",
+  "description": "Zaawansowany analizator statystyczny wyników Lotto. Wykorzystuje symulację historyczną i AI do typowania zakładów opartych na danych (Hot/Cold numbers).",
+  "requestFramePermissions": []
+}

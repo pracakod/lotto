@@ -1,0 +1,1133 @@
+
+<div class="max-w-4xl mx-auto flex flex-col min-h-screen pb-24 transition-colors duration-500 ease-in-out dark:bg-slate-900 bg-slate-50 dark:text-slate-100 text-slate-900">
+  
+  <!-- Top Bar: Game Selector (only show in analyze or history) -->
+  <div class="sticky top-0 z-30 dark:bg-slate-900/95 bg-white/95 backdrop-blur-md border-b dark:border-slate-800 border-slate-200 p-4 shadow-lg transition-all duration-300">
+    <div class="flex justify-between items-center mb-3">
+      <h1 class="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        Lotto AI
+      </h1>
+      <span class="text-xs text-slate-500 dark:text-slate-500 px-2 py-1 dark:bg-slate-800 bg-slate-100 rounded">v3.5 (Expert System)</span>
+    </div>
+    
+    @if (currentView() !== 'settings') {
+      <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide animate-[fadeIn_0.3s]">
+        @for (game of lottoService.games; track game.id) {
+          <button 
+            (click)="switchGame(game.id)"
+            class="whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 border"
+            [class.dark:bg-slate-700]="lottoService.activeGameId() !== game.id"
+            [class.bg-slate-100]="lottoService.activeGameId() !== game.id"
+            [class.dark:text-slate-400]="lottoService.activeGameId() !== game.id"
+            [class.text-slate-500]="lottoService.activeGameId() !== game.id"
+            [class.border-transparent]="lottoService.activeGameId() !== game.id"
+            [class.bg-blue-600]="lottoService.activeGameId() === game.id && game.id !== 'multi'"
+            [class.bg-purple-600]="lottoService.activeGameId() === game.id && game.id === 'multi'"
+            [class.text-white]="lottoService.activeGameId() === game.id"
+            [class.border-blue-400]="lottoService.activeGameId() === game.id && game.id !== 'multi'"
+            [class.border-purple-400]="lottoService.activeGameId() === game.id && game.id === 'multi'"
+            [class.shadow-[0_0_15px_rgba(37,99,235,0.4)]]="lottoService.activeGameId() === game.id && game.id !== 'multi'"
+            [class.shadow-[0_0_15px_rgba(147,51,234,0.4)]]="lottoService.activeGameId() === game.id && game.id === 'multi'"
+          >
+            {{ game.name }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  <main class="p-4 flex-grow flex flex-col gap-6">
+    
+    @if (currentView() === 'analyze') {
+      <!-- ANALYSIS VIEW -->
+      <section class="animate-[fadeIn_0.3s_ease-out]">
+        
+        <!-- Data Source Explanation -->
+        <div class="mb-6 dark:bg-slate-800/50 bg-white p-3 rounded-lg border dark:border-slate-700/50 border-slate-200 shadow-sm flex items-start gap-3">
+           <div class="mt-0.5 flex-shrink-0">
+             @if (lottoService.dataSource() === 'custom_import') {
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+               </svg>
+             } @else if (lottoService.dataSource() === 'expert_trend') {
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+             } @else {
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+               </svg>
+             }
+           </div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">
+            <strong class="text-slate-800 dark:text-slate-300">Aktywny System: 
+                @switch (lottoService.dataSource()) {
+                  @case ('expert_trend') { Baza Ekspercka (5 Lat) }
+                  @case ('manual') { Wybór Własny }
+                  @case ('custom_import') { Dane Zaimportowane }
+                }
+            </strong>
+            <p class="mt-1">
+              @if (lottoService.activeGameId() === 'euro') {
+                  <span class="text-orange-400 font-bold block mb-1">System 5+2 (Ostatnie 5 lat)</span>
+              }
+              @switch (lottoService.dataSource()) {
+                @case ('expert_trend') {
+                   @if(lottoService.activeGameId() === 'euro') {
+                       Ekspert Euro: Liderzy (34, 49) + Bonus (3, 8, 5). Redukcja wagi (11, 12).
+                   } @else if (lottoService.activeGameId() === 'mini') {
+                       Ekspert Mini: Analiza liderów (21, 28) i par z lat <span class="text-red-500 dark:text-red-400">2021-2025</span>.
+                   } @else if (lottoService.activeGameId() === 'multi') {
+                       <span class="text-purple-500 font-bold">Ekspert Multi: Baza 3600 losowań.</span> Pewniaki (53, 57...).
+                   } @else {
+                       Ekspert Lotto: Analiza liderów (4, 30) i trendów <span class="text-red-500 dark:text-red-400">2021-2025</span>.
+                   }
+                }
+                @default {
+                   Tryb użytkownika.
+                }
+              }
+            </p>
+          </div>
+        </div>
+
+        <!-- Mode Toggles / Generate Area -->
+        <div class="dark:bg-slate-800 bg-white p-6 rounded-2xl border dark:border-slate-700 border-slate-200 shadow-xl mb-6 relative overflow-hidden">
+          <h2 class="text-lg font-semibold dark:text-slate-200 text-slate-800 mb-4 relative z-10 flex justify-between items-center">
+            <span>Stwórz Zakład: <span [class]="lottoService.activeGameConfig().color">{{ lottoService.activeGameConfig().name }}</span></span>
+            @if(isManualMode()) {
+              <button (click)="toggleManualMode()" class="text-xs text-blue-400 hover:text-blue-300">Anuluj</button>
+            }
+          </h2>
+          
+          <!-- MULTI MULTI BET SIZE SELECTOR -->
+          @if (lottoService.activeGameId() === 'multi') {
+            <div class="mb-6 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-200 dark:border-purple-800/30">
+               <label class="text-xs font-bold text-purple-700 dark:text-purple-300 mb-2 block uppercase">Ile liczb chcesz skreślić?</label>
+               <div class="flex justify-between items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  @for (size of [1,2,3,4,5,6,7,8,9,10]; track size) {
+                     <button 
+                        (click)="setMultiBetSize(size)"
+                        class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-bold border transition-all"
+                        [class.bg-purple-600]="multiBetSize() === size"
+                        [class.text-white]="multiBetSize() === size"
+                        [class.border-purple-500]="multiBetSize() === size"
+                        [class.bg-white]="multiBetSize() !== size"
+                        [class.dark:bg-slate-800]="multiBetSize() !== size"
+                        [class.text-slate-600]="multiBetSize() !== size"
+                        [class.dark:text-slate-400]="multiBetSize() !== size"
+                     >
+                        {{ size }}
+                     </button>
+                  }
+               </div>
+               <p class="text-[10px] text-slate-500 mt-1">Wybrano: <strong>{{ multiBetSize() }}</strong> z 80. Maszyna losuje 20.</p>
+            </div>
+          }
+          
+          @if (!isManualMode()) {
+            <!-- AI Mode Buttons -->
+            <div class="flex flex-col gap-3">
+              <button 
+                (click)="generatePrediction()"
+                [disabled]="loading()"
+                class="w-full relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 disabled:grayscale"
+              >
+                @if (loading()) {
+                  <span class="flex items-center justify-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Analiza bazy 5-letniej...
+                  </span>
+                } @else {
+                  Generuj Zakład (Baza Ekspercka)
+                }
+              </button>
+
+              <button 
+                (click)="toggleManualMode()"
+                class="w-full py-3 dark:bg-slate-700 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600 dark:text-slate-300 text-slate-700 font-semibold rounded-xl border dark:border-slate-600 border-slate-300 transition-colors"
+              >
+                Wypełnij Kupon Ręcznie
+              </button>
+            </div>
+          } @else {
+            <!-- Manual Entry Grid -->
+            <div class="animate-[fadeIn_0.3s]">
+               
+               <!-- MAIN NUMBERS -->
+               <div class="flex justify-between items-center mb-2 text-sm text-slate-500 dark:text-slate-400">
+                 <span>Liczby Główne (1-{{ lottoService.activeGameConfig().totalNumbers }}):</span>
+                 <span [class.text-green-500]="manualNumbers().size === requiredSelectionCount()">
+                   {{ manualNumbers().size }} / {{ requiredSelectionCount() }}
+                 </span>
+               </div>
+               
+               <!-- Dynamic Grid Columns based on total numbers -->
+               <div [class]="lottoService.activeGameConfig().totalNumbers > 50 ? 'grid grid-cols-10 gap-1' : 'grid grid-cols-7 gap-2'" class="mb-6">
+                 @for (num of gridNumbers(); track num) {
+                   <button 
+                    (click)="toggleManualNumber(num)"
+                    class="aspect-square flex items-center justify-center rounded-lg font-bold border transition-all duration-200"
+                    [class.text-[10px]]="lottoService.activeGameConfig().totalNumbers > 50"
+                    [class.text-sm]="lottoService.activeGameConfig().totalNumbers <= 50"
+                    [class.bg-green-500]="manualNumbers().has(num)"
+                    [class.text-white]="manualNumbers().has(num)"
+                    [class.border-green-500]="manualNumbers().has(num)"
+                    [class.dark:bg-slate-900]="!manualNumbers().has(num)"
+                    [class.bg-slate-100]="!manualNumbers().has(num)"
+                    [class.dark:text-slate-400]="!manualNumbers().has(num)"
+                    [class.text-slate-600]="!manualNumbers().has(num)"
+                    [class.dark:border-slate-700]="!manualNumbers().has(num)"
+                    [class.border-slate-300]="!manualNumbers().has(num)"
+                   >
+                     {{ num }}
+                   </button>
+                 }
+               </div>
+
+               <!-- BONUS NUMBERS (Euro) -->
+               @if (lottoService.activeGameConfig().bonusTotalNumbers) {
+                 <div class="flex justify-between items-center mb-2 text-sm text-slate-500 dark:text-slate-400 pt-4 border-t dark:border-slate-700 border-slate-200">
+                    <span class="text-orange-400">Euro Numery (1-{{ lottoService.activeGameConfig().bonusTotalNumbers }}):</span>
+                    <span [class.text-orange-400]="manualBonusNumbers().size === lottoService.activeGameConfig().bonusDrawSize">
+                      {{ manualBonusNumbers().size }} / {{ lottoService.activeGameConfig().bonusDrawSize }}
+                    </span>
+                 </div>
+                 <div class="grid grid-cols-6 gap-2 mb-6">
+                   @for (num of bonusGridNumbers(); track num) {
+                     <button 
+                      (click)="toggleManualBonusNumber(num)"
+                      class="aspect-square flex items-center justify-center rounded-lg text-sm font-bold border transition-all duration-200"
+                      [class.bg-orange-500]="manualBonusNumbers().has(num)"
+                      [class.text-white]="manualBonusNumbers().has(num)"
+                      [class.border-orange-500]="manualBonusNumbers().has(num)"
+                      [class.dark:bg-slate-900]="!manualBonusNumbers().has(num)"
+                      [class.bg-slate-100]="!manualBonusNumbers().has(num)"
+                      [class.dark:text-slate-400]="!manualBonusNumbers().has(num)"
+                      [class.text-slate-600]="!manualBonusNumbers().has(num)"
+                      [class.dark:border-slate-700]="!manualBonusNumbers().has(num)"
+                      [class.border-slate-300]="!manualBonusNumbers().has(num)"
+                     >
+                       {{ num }}
+                     </button>
+                   }
+                 </div>
+               }
+
+               <button 
+                 (click)="saveManualCoupon()"
+                 [disabled]="!isManualComplete()"
+                 class="w-full py-4 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-xl transition-all shadow-lg"
+               >
+                 Zapisz Mój Kupon
+               </button>
+            </div>
+          }
+        </div>
+
+        @if (prediction().length > 0 && !isManualMode()) {
+          <div class="space-y-4 animate-[slideUp_0.4s_ease-out] mb-8">
+            
+            <div class="dark:bg-slate-800/80 bg-white p-6 rounded-2xl border dark:border-slate-700 border-slate-200 text-center relative overflow-hidden shadow-sm">
+               <div class="absolute top-2 right-2 px-2 py-1 bg-purple-500/20 text-purple-600 dark:text-purple-400 text-[10px] rounded border border-purple-500/30">AI Pick</div>
+               
+               <div class="flex flex-col gap-3 items-center">
+                   <!-- Main Balls -->
+                   <div class="flex flex-wrap justify-center gap-2">
+                    @for (num of prediction(); track num) {
+                      <div class="w-12 h-12 rounded-full lotto-ball-gradient lotto-ball-shadow flex items-center justify-center text-slate-900 text-xl font-bold">
+                        {{ num }}
+                      </div>
+                    }
+                   </div>
+                   
+                   <!-- Bonus Balls -->
+                   @if(predictionBonus().length > 0) {
+                       <div class="text-xs text-orange-400 uppercase tracking-widest mt-1">Bonus</div>
+                       <div class="flex flex-wrap justify-center gap-2">
+                        @for (num of predictionBonus(); track num) {
+                          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-300 to-orange-400 shadow-[0_0_10px_rgba(251,191,36,0.5)] flex items-center justify-center text-slate-900 text-lg font-bold border-2 border-yellow-200">
+                            {{ num }}
+                          </div>
+                        }
+                       </div>
+                   }
+               </div>
+              
+              <button 
+                (click)="saveCurrentPrediction()"
+                class="mt-6 text-xs flex items-center justify-center gap-2 mx-auto text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 transition-colors border border-green-500/30 dark:border-green-400/30 px-4 py-2 rounded-full hover:bg-green-500/10 dark:hover:bg-green-400/10"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Zapisz kupon w historii
+              </button>
+            </div>
+
+            <div class="dark:bg-slate-800 bg-white p-5 rounded-xl border dark:border-slate-700 border-slate-200 shadow-sm">
+               <h4 class="text-purple-500 dark:text-purple-400 text-sm font-semibold mb-2 flex items-center gap-2">
+                 <span class="bg-purple-500/20 p-1 rounded">AI</span> Analiza Gemini
+               </h4>
+               @if (aiExplanation()) {
+                <p class="text-slate-600 dark:text-slate-300 text-sm italic leading-relaxed">"{{ aiExplanation() }}"</p>
+               } @else {
+                 <div class="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+               }
+            </div>
+
+            <div class="dark:bg-slate-800 bg-white p-5 rounded-xl border dark:border-slate-700 border-slate-200 shadow-sm">
+               <h4 class="text-blue-500 dark:text-blue-400 text-sm font-semibold mb-2">Algorytm</h4>
+               <ul class="space-y-2">
+                @for (step of logicSteps(); track $index) {
+                  <li class="text-xs text-slate-500 dark:text-slate-400 flex gap-2">
+                    <span class="text-blue-500">•</span> {{ step }}
+                  </li>
+                }
+               </ul>
+            </div>
+          </div>
+        }
+
+        <!-- BOTTOM DATA CENTER (Better Charts & Data) -->
+        <section class="mt-8 pt-6 border-t dark:border-slate-800 border-slate-300">
+            <div class="flex items-center gap-2 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <h3 class="text-lg font-bold dark:text-white text-slate-900">Centrum Danych Statystycznych</h3>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <!-- Top Hot -->
+                <div class="dark:bg-slate-800 bg-white p-3 rounded-xl border dark:border-slate-700 border-slate-200 shadow-sm">
+                    <h4 class="text-[10px] uppercase text-slate-500 font-bold mb-2">Top 5 Gorących</h4>
+                    <div class="flex flex-wrap gap-1">
+                        @for (stat of topHotNumbers(); track stat.number) {
+                            <span class="text-xs font-bold dark:bg-red-900/40 bg-red-100 text-red-600 dark:text-red-400 border dark:border-red-900/50 border-red-200 px-1.5 py-0.5 rounded">
+                                {{ stat.number }}
+                            </span>
+                        }
+                    </div>
+                </div>
+                 <!-- Top Cold -->
+                <div class="dark:bg-slate-800 bg-white p-3 rounded-xl border dark:border-slate-700 border-slate-200 shadow-sm">
+                    <h4 class="text-[10px] uppercase text-slate-500 font-bold mb-2">Top 5 Zimnych</h4>
+                    <div class="flex flex-wrap gap-1">
+                        @for (stat of topColdNumbers(); track stat.number) {
+                            <span class="text-xs font-bold dark:bg-blue-900/40 bg-blue-100 text-blue-600 dark:text-blue-400 border dark:border-blue-900/50 border-blue-200 px-1.5 py-0.5 rounded">
+                                {{ stat.number }}
+                            </span>
+                        }
+                    </div>
+                </div>
+                 <!-- Extra Metric -->
+                <div class="dark:bg-slate-800 bg-white p-3 rounded-xl border dark:border-slate-700 border-slate-200 col-span-2 flex justify-between items-center shadow-sm">
+                    <div>
+                        <h4 class="text-[10px] uppercase text-slate-500 font-bold">Stosunek NP/P (W Gorących)</h4>
+                        <div class="text-[10px] text-slate-400">Nieparzyste / Parzyste</div>
+                    </div>
+                    <div class="text-lg font-bold dark:text-white text-slate-900 tracking-wider">
+                        {{ oddEvenRatio() }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pairs Analysis Card (New Feature) -->
+             <div class="dark:bg-slate-800 bg-white p-4 rounded-xl border dark:border-slate-700 border-slate-200 shadow-sm mb-4">
+                 <h4 class="text-xs uppercase text-slate-500 font-bold mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Silne Pary (Korelacje)
+                 </h4>
+                 @if(lottoService.topPairs().length > 0) {
+                     <div class="flex flex-wrap gap-2">
+                        @for (pair of lottoService.topPairs(); track $index) {
+                           <div class="flex items-center gap-1 bg-purple-500/10 dark:bg-purple-900/20 border border-purple-500/20 rounded-lg px-2 py-1">
+                               <span class="font-bold text-slate-800 dark:text-slate-200 text-xs">{{ pair[0] }}</span>
+                               <span class="text-[10px] text-purple-400">&</span>
+                               <span class="font-bold text-slate-800 dark:text-slate-200 text-xs">{{ pair[1] }}</span>
+                           </div>
+                        }
+                     </div>
+                 } @else {
+                     <p class="text-[10px] text-slate-400 italic">Brak danych korelacyjnych dla tego trybu.</p>
+                 }
+             </div>
+
+            <!-- Main Histogram -->
+            <div class="dark:bg-slate-800 bg-white rounded-xl border dark:border-slate-700 border-slate-200 shadow-lg p-4">
+              <div class="flex justify-between items-end mb-4">
+                <div>
+                  <h3 class="dark:text-slate-300 text-slate-700 font-semibold text-sm">Pełny Histogram Częstotliwości</h3>
+                  <p class="text-[10px] text-slate-500">Wizualizacja wszystkich liczb dla: {{ lottoService.activeGameConfig().name }}</p>
+                </div>
+                <!-- Visual Toggle -->
+                <div class="flex bg-slate-100 dark:bg-slate-900 rounded-lg p-0.5 border dark:border-slate-700 border-slate-300">
+                    <button 
+                        (click)="toggleVisualizationMode('bars')"
+                        class="px-2 py-1 rounded-md text-[10px] font-bold transition-all"
+                        [class.bg-white]="visualizationMode() === 'bars'"
+                        [class.text-slate-900]="visualizationMode() === 'bars'"
+                        [class.shadow-sm]="visualizationMode() === 'bars'"
+                        [class.dark:bg-slate-700]="visualizationMode() === 'bars'"
+                        [class.dark:text-white]="visualizationMode() === 'bars'"
+                        [class.text-slate-400]="visualizationMode() !== 'bars'"
+                    >
+                        Słupki
+                    </button>
+                    <button 
+                        (click)="toggleVisualizationMode('heatmap')"
+                        class="px-2 py-1 rounded-md text-[10px] font-bold transition-all"
+                        [class.bg-white]="visualizationMode() === 'heatmap'"
+                        [class.text-slate-900]="visualizationMode() === 'heatmap'"
+                        [class.shadow-sm]="visualizationMode() === 'heatmap'"
+                        [class.dark:bg-slate-700]="visualizationMode() === 'heatmap'"
+                        [class.dark:text-white]="visualizationMode() === 'heatmap'"
+                        [class.text-slate-400]="visualizationMode() !== 'heatmap'"
+                    >
+                        Mapa
+                    </button>
+                </div>
+              </div>
+              <app-histogram 
+                [data]="lottoService.stats()" 
+                [highlightNumbers]="isManualMode() ? [] : prediction()"
+                [mode]="visualizationMode()"
+              ></app-histogram>
+            </div>
+        </section>
+
+      </section>
+    } @else if (currentView() === 'results') {
+        <!-- REAL RESULTS TAB -->
+        <section class="animate-[fadeIn_0.3s_ease-out]">
+            <h2 class="text-xl font-bold dark:text-white text-slate-800 mb-2 pl-2 border-l-4 border-green-500">Ostatnie Losowania</h2>
+            <p class="text-xs text-slate-500 mb-6 pl-3">Historia rzeczywistych wyników gry: <span [class]="lottoService.activeGameConfig().color" class="font-bold">{{ lottoService.activeGameConfig().name }}</span></p>
+
+            <div class="mb-4">
+               <button (click)="toggleAddingResult()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 font-semibold text-sm transition-all flex items-center justify-center gap-2">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  {{ isAddingResult() ? 'Anuluj Dodawanie' : 'Dodaj Nowy Wynik Ręcznie' }}
+               </button>
+               
+               @if(isAddingResult()) {
+                   <div class="mt-4 p-4 dark:bg-slate-800 bg-white rounded-xl border dark:border-slate-700 border-slate-200 animate-[fadeIn_0.3s]">
+                       <h3 class="text-sm font-bold mb-3 dark:text-white text-slate-900">Wybierz liczby z dzisiejszego losowania:</h3>
+                       
+                       <!-- Main Numbers -->
+                       <div class="flex justify-between items-center mb-1 text-xs text-slate-500">
+                         <span>Liczby ({{ newResultSelection().size }}/{{ lottoService.activeGameConfig().drawSize }})</span>
+                       </div>
+                       
+                       <!-- RESULT ADD GRID -->
+                       <div [class]="lottoService.activeGameConfig().totalNumbers > 50 ? 'grid grid-cols-10 gap-1' : 'grid grid-cols-7 gap-2'" class="mb-4">
+                           @for (num of gridNumbers(); track num) {
+                               <button 
+                                (click)="toggleNewResultNumber(num)"
+                                class="aspect-square flex items-center justify-center rounded-lg font-bold border transition-all duration-200"
+                                [class.text-[10px]]="lottoService.activeGameConfig().totalNumbers > 50"
+                                [class.text-sm]="lottoService.activeGameConfig().totalNumbers <= 50"
+                                [class.bg-green-600]="newResultSelection().has(num)"
+                                [class.text-white]="newResultSelection().has(num)"
+                                [class.border-green-500]="newResultSelection().has(num)"
+                                [class.dark:bg-slate-900]="!newResultSelection().has(num)"
+                                [class.bg-slate-100]="!newResultSelection().has(num)"
+                                [class.dark:text-slate-400]="!newResultSelection().has(num)"
+                                [class.text-slate-600]="!newResultSelection().has(num)"
+                                [class.dark:border-slate-700]="!newResultSelection().has(num)"
+                                [class.border-slate-300]="!newResultSelection().has(num)"
+                               >
+                                 {{ num }}
+                               </button>
+                           }
+                       </div>
+
+                       <!-- Bonus Numbers (if euro) -->
+                       @if (lottoService.activeGameConfig().bonusTotalNumbers) {
+                           <div class="flex justify-between items-center mb-1 text-xs text-orange-500">
+                             <span>Bonus ({{ newResultBonusSelection().size }}/{{ lottoService.activeGameConfig().bonusDrawSize }})</span>
+                           </div>
+                           <div class="grid grid-cols-6 gap-2 mb-4">
+                               @for (num of bonusGridNumbers(); track num) {
+                                   <button 
+                                    (click)="toggleNewResultBonusNumber(num)"
+                                    class="aspect-square flex items-center justify-center rounded-lg text-sm font-bold border transition-all duration-200"
+                                    [class.bg-orange-600]="newResultBonusSelection().has(num)"
+                                    [class.text-white]="newResultBonusSelection().has(num)"
+                                    [class.border-orange-500]="newResultBonusSelection().has(num)"
+                                    [class.dark:bg-slate-900]="!newResultBonusSelection().has(num)"
+                                    [class.bg-slate-100]="!newResultBonusSelection().has(num)"
+                                    [class.dark:text-slate-400]="!newResultBonusSelection().has(num)"
+                                    [class.text-slate-600]="!newResultBonusSelection().has(num)"
+                                    [class.dark:border-slate-700]="!newResultBonusSelection().has(num)"
+                                    [class.border-slate-300]="!newResultBonusSelection().has(num)"
+                                   >
+                                     {{ num }}
+                                   </button>
+                               }
+                           </div>
+                       }
+
+                       <button 
+                         (click)="saveNewResult()"
+                         [disabled]="!isNewResultComplete()"
+                         class="w-full py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold rounded-lg transition-all"
+                       >
+                         Zapisz Wynik i Aktualizuj Statystyki
+                       </button>
+                   </div>
+               }
+            </div>
+
+            <div class="space-y-3">
+                @for (draw of lottoService.currentPastDraws(); track draw.date) {
+                    <div class="dark:bg-slate-800 bg-white rounded-xl p-4 border dark:border-slate-700 border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <div class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Data Losowania</div>
+                            <div class="text-sm font-semibold dark:text-slate-200 text-slate-800">{{ draw.date }}</div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                             <div class="flex flex-wrap justify-end gap-1 max-w-[200px]">
+                                @for (num of draw.numbers; track num) {
+                                    <span class="w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600">
+                                        {{ num }}
+                                    </span>
+                                }
+                             </div>
+                             @if(draw.bonusNumbers.length > 0) {
+                                 <div class="flex flex-wrap justify-end gap-1">
+                                    @for (num of draw.bonusNumbers; track num) {
+                                        <span class="w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800">
+                                            {{ num }}
+                                        </span>
+                                    }
+                                 </div>
+                             }
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <div class="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-900/30 text-center">
+                <p class="text-[10px] text-yellow-800 dark:text-yellow-500">
+                    Wersja Demo: Ostatnie wyniki są danymi przykładowymi dla prezentacji interfejsu. 
+                    Użyj przycisku "Dodaj" aby wprowadzić aktualne liczby.
+                </p>
+            </div>
+        </section>
+    } @else if (currentView() === 'history') {
+      <!-- HISTORY VIEW -->
+      <section class="animate-[fadeIn_0.3s_ease-out]">
+        
+        <!-- REAL CHECK PANEL -->
+        <div class="mb-6 dark:bg-slate-800 bg-white border dark:border-slate-700 border-slate-200 rounded-xl overflow-hidden shadow-lg">
+           <div class="p-4 dark:bg-slate-800 bg-white border-b dark:border-slate-700 border-slate-200 flex justify-between items-center">
+             <h2 class="text-sm font-bold dark:text-white text-slate-900 flex items-center gap-2">
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+               </svg>
+               Weryfikator Kuponów
+             </h2>
+             <button (click)="toggleCheckMode()" class="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+               {{ isCheckMode() ? 'Schowaj' : 'Wpisz Wyniki Losowania' }}
+             </button>
+           </div>
+           
+           @if (isCheckMode()) {
+             <div class="p-4 dark:bg-slate-900/50 bg-slate-50 animate-[fadeIn_0.3s]">
+               <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                 @if(lottoService.activeGameConfig().bonusTotalNumbers) {
+                     Wpisz/wklej wyniki (np. "12 15 20 30 45 <span class="text-orange-500 dark:text-orange-400">3 8</span>").
+                 } @else {
+                     Wpisz liczby ręcznie lub <strong class="text-slate-900 dark:text-white">wklej</strong> (np. "2, 12, 17, 24, 42, 43").
+                 }
+               </p>
+
+               <div class="mb-4">
+                 <input 
+                   type="text" 
+                   class="w-full dark:bg-slate-800 bg-white border dark:border-slate-600 border-slate-300 dark:text-white text-slate-900 rounded p-2 text-sm focus:border-blue-500 outline-none" 
+                   placeholder="Wklej tutaj wynik losowania..."
+                   (paste)="onPasteResults($event)"
+                   (input)="onPasteResults($event)"
+                 />
+               </div>
+
+               <!-- MAIN GRID (Check Mode) -->
+               <div class="text-xs text-slate-500 dark:text-slate-400 mb-1">Główne:</div>
+               <div [class]="lottoService.activeGameConfig().totalNumbers > 50 ? 'grid grid-cols-10 gap-1' : 'grid grid-cols-7 gap-2'" class="mb-4">
+                 @for (num of gridNumbers(); track num) {
+                   <button 
+                    (click)="toggleWinningNumber(num)"
+                    class="aspect-square flex items-center justify-center rounded-lg font-bold border transition-all duration-100"
+                    [class.text-[10px]]="lottoService.activeGameConfig().totalNumbers > 50"
+                    [class.text-sm]="lottoService.activeGameConfig().totalNumbers <= 50"
+                    [class.bg-green-600]="winningNumbersSelection().has(num)"
+                    [class.text-white]="winningNumbersSelection().has(num)"
+                    [class.border-green-500]="winningNumbersSelection().has(num)"
+                    [class.dark:bg-slate-800]="!winningNumbersSelection().has(num)"
+                    [class.bg-white]="!winningNumbersSelection().has(num)"
+                    [class.text-slate-600]="!winningNumbersSelection().has(num)"
+                    [class.dark:text-slate-400]="!winningNumbersSelection().has(num)"
+                    [class.dark:border-slate-700]="!winningNumbersSelection().has(num)"
+                    [class.border-slate-300]="!winningNumbersSelection().has(num)"
+                   >
+                     {{ num }}
+                   </button>
+                 }
+               </div>
+
+               <!-- BONUS GRID (if euro) -->
+               @if (lottoService.activeGameConfig().bonusTotalNumbers) {
+                 <div class="text-xs text-orange-500 dark:text-orange-400 mb-1">Bonusowe:</div>
+                 <div class="grid grid-cols-6 gap-2 mb-4">
+                   @for (num of bonusGridNumbers(); track num) {
+                     <button 
+                      (click)="toggleWinningBonusNumber(num)"
+                      class="aspect-square flex items-center justify-center rounded-lg text-sm font-bold border transition-all duration-100"
+                      [class.bg-orange-600]="winningBonusSelection().has(num)"
+                      [class.text-white]="winningBonusSelection().has(num)"
+                      [class.border-orange-500]="winningBonusSelection().has(num)"
+                      [class.dark:bg-slate-800]="!winningBonusSelection().has(num)"
+                      [class.bg-white]="!winningBonusSelection().has(num)"
+                      [class.text-slate-600]="!winningBonusSelection().has(num)"
+                      [class.dark:text-slate-400]="!winningBonusSelection().has(num)"
+                      [class.dark:border-slate-700]="!winningBonusSelection().has(num)"
+                      [class.border-slate-300]="!winningBonusSelection().has(num)"
+                     >
+                       {{ num }}
+                     </button>
+                   }
+                 </div>
+               }
+               
+               <button 
+                 (click)="confirmRealCheck()"
+                 [disabled]="!isWinningSelectionComplete()"
+                 class="w-full py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:text-slate-400 dark:disabled:text-slate-500 text-white font-bold rounded-lg transition-all"
+               >
+                 Przelicz Moje Kupony
+               </button>
+             </div>
+           }
+        </div>
+
+        <h2 class="text-lg font-bold dark:text-white text-slate-800 mb-2 pl-2 border-l-4 border-slate-500">Zapisane Kupony</h2>
+        
+        <!-- FILTER TABS -->
+        <div class="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
+            <button 
+                (click)="setHistoryFilter('all')"
+                class="px-3 py-1.5 rounded-full text-xs font-bold transition-all border"
+                [class.dark:bg-slate-700]="historyFilter() !== 'all'"
+                [class.bg-white]="historyFilter() !== 'all'"
+                [class.dark:text-slate-400]="historyFilter() !== 'all'"
+                [class.text-slate-600]="historyFilter() !== 'all'"
+                [class.border-transparent]="historyFilter() !== 'all'"
+                [class.dark:bg-white]="historyFilter() === 'all'"
+                [class.bg-slate-800]="historyFilter() === 'all'"
+                [class.dark:text-slate-900]="historyFilter() === 'all'"
+                [class.text-white]="historyFilter() === 'all'"
+                [class.dark:border-white]="historyFilter() === 'all'"
+            >
+                Wszystkie
+            </button>
+            <button 
+                (click)="setHistoryFilter('lotto')"
+                class="px-3 py-1.5 rounded-full text-xs font-bold transition-all border"
+                [class.dark:bg-slate-700]="historyFilter() !== 'lotto'"
+                [class.bg-white]="historyFilter() !== 'lotto'"
+                [class.dark:text-slate-400]="historyFilter() !== 'lotto'"
+                [class.text-slate-600]="historyFilter() !== 'lotto'"
+                [class.border-transparent]="historyFilter() !== 'lotto'"
+                [class.bg-yellow-500]="historyFilter() === 'lotto'"
+                [class.text-slate-900]="historyFilter() === 'lotto'"
+                [class.border-yellow-500]="historyFilter() === 'lotto'"
+            >
+                Lotto
+            </button>
+            <button 
+                (click)="setHistoryFilter('mini')"
+                class="px-3 py-1.5 rounded-full text-xs font-bold transition-all border"
+                [class.dark:bg-slate-700]="historyFilter() !== 'mini'"
+                [class.bg-white]="historyFilter() !== 'mini'"
+                [class.dark:text-slate-400]="historyFilter() !== 'mini'"
+                [class.text-slate-600]="historyFilter() !== 'mini'"
+                [class.border-transparent]="historyFilter() !== 'mini'"
+                [class.bg-blue-500]="historyFilter() === 'mini'"
+                [class.text-white]="historyFilter() === 'mini'"
+                [class.border-blue-500]="historyFilter() === 'mini'"
+            >
+                Mini
+            </button>
+            <button 
+                (click)="setHistoryFilter('euro')"
+                class="px-3 py-1.5 rounded-full text-xs font-bold transition-all border"
+                [class.dark:bg-slate-700]="historyFilter() !== 'euro'"
+                [class.bg-white]="historyFilter() !== 'euro'"
+                [class.dark:text-slate-400]="historyFilter() !== 'euro'"
+                [class.text-slate-600]="historyFilter() !== 'euro'"
+                [class.border-transparent]="historyFilter() !== 'euro'"
+                [class.bg-orange-500]="historyFilter() === 'euro'"
+                [class.text-white]="historyFilter() === 'euro'"
+                [class.border-orange-500]="historyFilter() === 'euro'"
+            >
+                Euro
+            </button>
+            <button 
+                (click)="setHistoryFilter('multi')"
+                class="px-3 py-1.5 rounded-full text-xs font-bold transition-all border"
+                [class.dark:bg-slate-700]="historyFilter() !== 'multi'"
+                [class.bg-white]="historyFilter() !== 'multi'"
+                [class.dark:text-slate-400]="historyFilter() !== 'multi'"
+                [class.text-slate-600]="historyFilter() !== 'multi'"
+                [class.border-transparent]="historyFilter() !== 'multi'"
+                [class.bg-purple-600]="historyFilter() === 'multi'"
+                [class.text-white]="historyFilter() === 'multi'"
+                [class.border-purple-600]="historyFilter() === 'multi'"
+            >
+                Multi
+            </button>
+        </div>
+
+        @if (filteredCoupons().length === 0) {
+          <div class="text-center py-12 text-slate-500 dark:bg-slate-800/50 bg-white rounded-xl border dark:border-slate-700 border-slate-300 border-dashed">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <p>Brak kuponów dla wybranego filtra.</p>
+            @if(historyFilter() === 'all') {
+                <button (click)="currentView.set('analyze')" class="mt-4 text-blue-500 hover:underline">Stwórz pierwszy zakład</button>
+            }
+          </div>
+        }
+
+        <div class="space-y-4">
+          @for (coupon of filteredCoupons(); track coupon.id) {
+            <div class="dark:bg-slate-800 bg-white rounded-xl p-4 border dark:border-slate-700 border-slate-200 shadow-md">
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-900 bg-slate-300 px-2 py-0.5 rounded">{{ coupon.gameName }}</span>
+                    @if (coupon.type === 'ai') {
+                      <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30">AI</span>
+                    } @else {
+                      <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/30">Ręczny</span>
+                    }
+                  </div>
+                  <div class="text-[10px] text-slate-500">{{ coupon.date | date:'short' }}</div>
+                </div>
+                
+                @if (coupon.matches !== null) {
+                  <div class="text-right">
+                    <div class="text-xl font-bold" [class.text-green-500]="coupon.matches! > 2" [class.text-slate-400]="coupon.matches! <= 2">
+                      {{ coupon.matches }} + {{ coupon.bonusMatches || 0 }}
+                    </div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500">Trafień</div>
+                  </div>
+                }
+              </div>
+
+              <!-- Numbers (Main + Bonus) -->
+              <div class="flex flex-wrap items-center gap-2 mb-4">
+                <!-- Main -->
+                @for (num of coupon.numbers; track num) {
+                  <span 
+                    class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold border transition-colors"
+                    [class.bg-green-500]="coupon.drawResult?.includes(num)"
+                    [class.text-slate-900]="coupon.drawResult?.includes(num)"
+                    [class.border-green-500]="coupon.drawResult?.includes(num)"
+                    [class.dark:bg-slate-700]="!coupon.drawResult?.includes(num)"
+                    [class.bg-slate-100]="!coupon.drawResult?.includes(num)"
+                    [class.dark:text-white]="!coupon.drawResult?.includes(num)"
+                    [class.text-slate-800]="!coupon.drawResult?.includes(num)"
+                    [class.dark:border-slate-600]="!coupon.drawResult?.includes(num)"
+                    [class.border-slate-300]="!coupon.drawResult?.includes(num)"
+                  >
+                    {{ num }}
+                  </span>
+                }
+                <!-- Bonus (if euro) -->
+                @if (coupon.bonusNumbers.length > 0) {
+                   <div class="h-6 w-px bg-slate-600 mx-1"></div>
+                   @for (num of coupon.bonusNumbers; track num) {
+                     <span 
+                        class="w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold border transition-colors"
+                        [class.bg-orange-500]="coupon.bonusDrawResult?.includes(num)"
+                        [class.text-white]="coupon.bonusDrawResult?.includes(num)"
+                        [class.border-orange-500]="coupon.bonusDrawResult?.includes(num)"
+                        [class.dark:bg-slate-800]="!coupon.bonusDrawResult?.includes(num)"
+                        [class.bg-white]="!coupon.bonusDrawResult?.includes(num)"
+                        [class.text-orange-500]="!coupon.bonusDrawResult?.includes(num)"
+                        [class.dark:text-orange-400]="!coupon.bonusDrawResult?.includes(num)"
+                        [class.border-orange-500-30]="!coupon.bonusDrawResult?.includes(num)"
+                        [class.border]="true"
+                      >
+                        {{ num }}
+                      </span>
+                   }
+                }
+              </div>
+
+              <!-- Action / Result -->
+              @if (!coupon.drawResult) {
+                <button 
+                  (click)="lottoService.checkCouponResult(coupon.id)"
+                  class="w-full py-2 dark:bg-slate-700 bg-slate-100 hover:bg-slate-200 dark:hover:bg-slate-600 dark:text-slate-200 text-slate-800 text-xs font-semibold rounded transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Symuluj Losowanie (Test)
+                </button>
+              } @else {
+                <div class="dark:bg-slate-900/50 bg-slate-50 p-2 rounded text-xs dark:text-slate-400 text-slate-500 border dark:border-slate-700/50 border-slate-200">
+                  <span class="flex justify-between items-center mb-1">
+                    <span>
+                        @if (coupon.isRealCheck) {
+                            <span class="text-green-500 font-bold">✓ Prawdziwe Losowanie:</span>
+                        } @else {
+                            <span>Symulacja Losowania:</span>
+                        }
+                    </span>
+                  </span>
+                  <div class="flex gap-1 text-slate-600 dark:text-slate-300 font-mono flex-wrap">
+                    @for (d of coupon.drawResult; track d) { 
+                        <span [class.text-green-500]="coupon.numbers.includes(d)" [class.font-bold]="coupon.numbers.includes(d)">{{d}}</span> 
+                    }
+                    @if(coupon.bonusDrawResult && coupon.bonusDrawResult.length > 0) {
+                        <span class="text-orange-500 dark:text-orange-400 ml-2 font-bold">+</span>
+                        @for (b of coupon.bonusDrawResult; track b) { <span class="text-orange-400 dark:text-orange-300">{{b}}</span> }
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    } @else {
+      <!-- SETTINGS VIEW (Only slight changes needed, mostly reused) -->
+      <section class="animate-[fadeIn_0.3s_ease-out]">
+         <h2 class="text-xl font-bold dark:text-white text-slate-800 mb-6 pl-2 border-l-4 border-slate-500">Ustawienia</h2>
+         
+         <!-- INTERFACE SETTINGS -->
+         <div class="dark:bg-slate-800 bg-white rounded-xl overflow-hidden border dark:border-slate-700 border-slate-200 mb-6 shadow-sm">
+            <div class="p-4 border-b dark:border-slate-700 border-slate-200 dark:bg-slate-800/80 bg-slate-50">
+              <h3 class="font-bold text-sm dark:text-slate-200 text-slate-800 mb-1">Interfejs</h3>
+              <p class="text-[10px] text-slate-500">Dostosuj wygląd aplikacji</p>
+            </div>
+            
+            <div class="p-4 grid grid-cols-2 gap-4">
+                <!-- Theme Toggle -->
+                <button 
+                  (click)="toggleTheme()"
+                  class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all duration-300"
+                  [class.dark:bg-slate-700]="isDarkMode()"
+                  [class.bg-blue-50]="!isDarkMode()"
+                  [class.dark:border-slate-600]="isDarkMode()"
+                  [class.border-blue-200]="!isDarkMode()"
+                >
+                  <div class="p-2 rounded-full" [class.bg-yellow-100]="!isDarkMode()" [class.text-yellow-600]="!isDarkMode()" [class.bg-slate-900]="isDarkMode()" [class.text-slate-300]="isDarkMode()">
+                      @if (isDarkMode()) {
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                      } @else {
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                      }
+                  </div>
+                  <span class="text-xs font-bold dark:text-slate-200 text-slate-800">{{ isDarkMode() ? 'Tryb Ciemny' : 'Tryb Jasny' }}</span>
+                </button>
+
+                <!-- Fullscreen Toggle -->
+                <button 
+                  (click)="toggleFullscreen()"
+                  class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl border dark:border-slate-600 border-slate-200 dark:hover:bg-slate-700 hover:bg-slate-50 transition-all duration-300"
+                >
+                  <div class="p-2 rounded-full dark:bg-slate-900 bg-white shadow-sm dark:text-slate-300 text-slate-600">
+                    @if (isFullscreen()) {
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10H4v5h5v-5zm10 0h-5v5h5v-5zM9 4H4v5h5V4zm10 0h-5v5h5V4z" />
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    } @else {
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                    }
+                  </div>
+                  <span class="text-xs font-bold dark:text-slate-200 text-slate-800">{{ isFullscreen() ? 'Zamknij' : 'Pełny Ekran' }}</span>
+                </button>
+
+            </div>
+         </div>
+
+         <!-- Data Source Config -->
+         <div class="dark:bg-slate-800 bg-white rounded-xl overflow-hidden border dark:border-slate-700 border-slate-200 mb-6 shadow-sm">
+            <div class="p-4 border-b dark:border-slate-700 border-slate-200 dark:bg-slate-800/80 bg-slate-50">
+              <h3 class="font-bold text-sm dark:text-slate-200 text-slate-800 mb-1">Konfiguracja Źródła Danych</h3>
+              <p class="text-[10px] text-slate-500">Silnik oparty na Bazie Eksperckiej (5 Lat).</p>
+            </div>
+
+            <div class="p-4 space-y-4">
+              <!-- Toggle Buttons for sources -->
+              <div class="flex flex-col gap-2">
+                
+                <button 
+                  (click)="lottoService.setDataSource('expert_trend')"
+                  class="flex items-center gap-3 p-3 rounded-lg border transition-all text-left"
+                  [class.bg-red-600]="lottoService.dataSource() === 'expert_trend'"
+                  [class.border-red-500]="lottoService.dataSource() === 'expert_trend'"
+                  [class.dark:bg-slate-900]="lottoService.dataSource() !== 'expert_trend'"
+                  [class.bg-white]="lottoService.dataSource() !== 'expert_trend'"
+                  [class.dark:border-slate-800]="lottoService.dataSource() !== 'expert_trend'"
+                  [class.border-slate-200]="lottoService.dataSource() !== 'expert_trend'"
+                >
+                  <div class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center">
+                    @if (lottoService.dataSource() === 'expert_trend') { <div class="w-2.5 h-2.5 bg-white rounded-full"></div> }
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold dark:text-slate-200 text-slate-800" [class.text-white]="lottoService.dataSource() === 'expert_trend'">System Ekspercki (5 lat)</div>
+                    <div class="text-[10px] text-slate-500" [class.text-slate-200]="lottoService.dataSource() === 'expert_trend'">Analiza par, biasu maszyn i systemu 5+2 (Domyślny)</div>
+                  </div>
+                </button>
+                
+                <button 
+                  (click)="lottoService.setDataSource('custom_import')"
+                  class="flex items-center gap-3 p-3 rounded-lg border transition-all text-left"
+                  [class.bg-yellow-600]="lottoService.dataSource() === 'custom_import'"
+                  [class.border-yellow-500]="lottoService.dataSource() === 'custom_import'"
+                  [class.dark:bg-slate-900]="lottoService.dataSource() !== 'custom_import'"
+                  [class.bg-white]="lottoService.dataSource() !== 'custom_import'"
+                  [class.dark:border-slate-800]="lottoService.dataSource() !== 'custom_import'"
+                  [class.border-slate-200]="lottoService.dataSource() !== 'custom_import'"
+                >
+                  <div class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center">
+                    @if (lottoService.dataSource() === 'custom_import') { <div class="w-2.5 h-2.5 bg-white rounded-full"></div> }
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold dark:text-slate-200 text-slate-800" [class.text-white]="lottoService.dataSource() === 'custom_import'">Importuj Własne Dane</div>
+                    <div class="text-[10px] text-slate-500" [class.text-slate-200]="lottoService.dataSource() === 'custom_import'">
+                        @if (lottoService.customDataTotalDraws() > 0) {
+                            Załadowano {{ lottoService.customDataTotalDraws() }} losowań
+                        } @else {
+                            Wklej listę losowań (format mbnet.com.pl)
+                        }
+                    </div>
+                  </div>
+                </button>
+
+                <button 
+                  (click)="lottoService.setDataSource('manual')"
+                  class="flex items-center gap-3 p-3 rounded-lg border transition-all text-left"
+                  [class.bg-purple-600]="lottoService.dataSource() === 'manual'"
+                  [class.border-purple-500]="lottoService.dataSource() === 'manual'"
+                  [class.dark:bg-slate-900]="lottoService.dataSource() !== 'manual'"
+                  [class.bg-white]="lottoService.dataSource() !== 'manual'"
+                  [class.dark:border-slate-800]="lottoService.dataSource() !== 'manual'"
+                  [class.border-slate-200]="lottoService.dataSource() !== 'manual'"
+                >
+                  <div class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center">
+                    @if (lottoService.dataSource() === 'manual') { <div class="w-2.5 h-2.5 bg-white rounded-full"></div> }
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold dark:text-slate-200 text-slate-800" [class.text-white]="lottoService.dataSource() === 'manual'">Własne Dane (Ręczne)</div>
+                    <div class="text-[10px] text-slate-500" [class.text-slate-200]="lottoService.dataSource() === 'manual'">Sam wybierasz liczby Gorące</div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Import Panel -->
+              @if (lottoService.dataSource() === 'custom_import') {
+                <div class="animate-[fadeIn_0.3s] mt-4 pt-4 border-t dark:border-slate-700 border-slate-200">
+                   <p class="text-[10px] text-slate-400 mb-3">
+                     Obsługuje format standardowy oraz pliki tekstowe (np. z mbnet.com.pl dla Eurojackpot).
+                   </p>
+                   
+                   <textarea 
+                     rows="6"
+                     class="w-full dark:bg-slate-900 bg-white border dark:border-slate-600 border-slate-300 text-xs dark:text-slate-300 text-slate-800 p-2 rounded mb-3 focus:border-yellow-500 outline-none"
+                     placeholder="Wklej tutaj zawartość pliku txt..."
+                     [value]="importText()"
+                     (input)="onImportTextChange($event)"
+                   ></textarea>
+
+                   <button 
+                     (click)="processImport()"
+                     class="w-full py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded text-xs transition-colors"
+                   >
+                     Analizuj Wklejone Dane
+                   </button>
+                   
+                   @if (importSuccess()) {
+                    <p class="mt-2 text-xs text-green-400 font-bold text-center animate-pulse">
+                        Pomyślnie zaimportowano dane! Przełączam na Analizę...
+                    </p>
+                   }
+                </div>
+              }
+
+              <!-- Manual Config Panel -->
+              @if (lottoService.dataSource() === 'manual') {
+                <div class="animate-[fadeIn_0.3s] mt-4 pt-4 border-t dark:border-slate-700 border-slate-200">
+                   <p class="text-[10px] text-slate-400 mb-3">
+                     Kliknij liczby, które mają być traktowane jako 
+                     <span class="text-red-400 font-bold">GORĄCE</span>. 
+                   </p>
+                   <div class="grid grid-cols-7 gap-1.5">
+                      @for (num of gridNumbers(); track num) {
+                        <button 
+                          (click)="lottoService.toggleManualHotNumber(num)"
+                          class="aspect-square flex items-center justify-center rounded text-xs font-bold border transition-all duration-100"
+                          [class.bg-red-500]="lottoService.manualHotNumbers().has(num)"
+                          [class.text-white]="lottoService.manualHotNumbers().has(num)"
+                          [class.border-red-600]="lottoService.manualHotNumbers().has(num)"
+                          [class.dark:bg-slate-700]="!lottoService.manualHotNumbers().has(num)"
+                          [class.bg-white]="!lottoService.manualHotNumbers().has(num)"
+                          [class.text-slate-600]="!lottoService.manualHotNumbers().has(num)"
+                          [class.dark:text-slate-400]="!lottoService.manualHotNumbers().has(num)"
+                          [class.border-slate-300]="!lottoService.manualHotNumbers().has(num)"
+                          [class.dark:border-slate-600]="!lottoService.manualHotNumbers().has(num)"
+                        >
+                          {{ num }}
+                        </button>
+                      }
+                   </div>
+                </div>
+              }
+            </div>
+         </div>
+
+         <div class="dark:bg-slate-800 bg-white rounded-xl overflow-hidden border dark:border-slate-700 border-slate-200 shadow-sm">
+           <!-- Share / Copy Link -->
+           <div class="p-4 flex items-center justify-between border-b dark:border-slate-700 border-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer" (click)="shareApp()">
+             <div class="flex items-center gap-3">
+               <div class="p-2 bg-purple-500/10 rounded-lg text-purple-600 dark:text-purple-400 transition-colors" [class.bg-green-500-10]="linkCopied()" [class.text-green-500]="linkCopied()" [class.dark:text-green-400]="linkCopied()">
+                  @if (linkCopied()) {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  }
+               </div>
+               <div>
+                 <div class="font-semibold text-sm" [class.text-green-500]="linkCopied()" [class.dark:text-green-400]="linkCopied()">
+                   {{ linkCopied() ? 'Skopiowano!' : 'Udostępnij Aplikację' }}
+                 </div>
+                 <div class="text-[10px] text-slate-500">Wyślij link znajomym</div>
+               </div>
+             </div>
+           </div>
+
+           <!-- Clear Data -->
+           <div class="p-4 flex items-center justify-between hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors cursor-pointer" (click)="clearHistory()">
+             <div class="flex items-center gap-3">
+               <div class="p-2 bg-red-500/10 rounded-lg text-red-500 dark:text-red-400">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+               </div>
+               <div>
+                 <div class="font-semibold text-sm text-red-500 dark:text-red-400">Wyczyść Historię</div>
+                 <div class="text-[10px] text-slate-500">Usuń wszystkie zapisane kupony</div>
+               </div>
+             </div>
+           </div>
+
+         </div>
+      </section>
+    }
+  </main>
+  
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 z-40 left-0 right-0 mx-auto dark:bg-slate-900/95 bg-white/95 backdrop-blur-lg border-t dark:border-slate-800 border-slate-200 flex justify-around p-2 pb-safe w-full max-w-4xl">
+    <button 
+      (click)="currentView.set('analyze')"
+      class="flex flex-col items-center gap-1 p-2 rounded-lg transition-all w-20"
+      [class.dark:bg-slate-800]="currentView() === 'analyze'"
+      [class.bg-blue-50]="currentView() === 'analyze'"
+      [class.text-blue-500]="currentView() === 'analyze'"
+      [class.text-slate-500]="currentView() !== 'analyze'"
+      [class.dark:text-slate-400]="currentView() !== 'analyze'"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+      <span class="text-[10px] font-medium">Analiza</span>
+    </button>
+    
+    <!-- RESULTS NAV ITEM -->
+    <button 
+      (click)="currentView.set('results')"
+      class="flex flex-col items-center gap-1 p-2 rounded-lg transition-all w-20"
+      [class.dark:bg-slate-800]="currentView() === 'results'"
+      [class.bg-blue-50]="currentView() === 'results'"
+      [class.text-blue-500]="currentView() === 'results'"
+      [class.text-slate-500]="currentView() !== 'results'"
+      [class.dark:text-slate-400]="currentView() !== 'results'"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+      <span class="text-[10px] font-medium">Wyniki</span>
+    </button>
+    
+    <button 
+      (click)="currentView.set('history')"
+      class="flex flex-col items-center gap-1 p-2 rounded-lg transition-all w-20"
+      [class.dark:bg-slate-800]="currentView() === 'history'"
+      [class.bg-blue-50]="currentView() === 'history'"
+      [class.text-blue-500]="currentView() === 'history'"
+      [class.text-slate-500]="currentView() !== 'history'"
+      [class.dark:text-slate-400]="currentView() !== 'history'"
+    >
+      <div class="relative">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        @if (lottoService.savedCoupons().length > 0) {
+          <span class="absolute top-0 right-0 flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+          </span>
+        }
+      </div>
+      <span class="text-[10px] font-medium">Kupony</span>
+    </button>
+
+    <button 
+      (click)="currentView.set('settings')"
+      class="flex flex-col items-center gap-1 p-2 rounded-lg transition-all w-20"
+      [class.dark:bg-slate-800]="currentView() === 'settings'"
+      [class.bg-blue-50]="currentView() === 'settings'"
+      [class.text-blue-500]="currentView() === 'settings'"
+      [class.text-slate-500]="currentView() !== 'settings'"
+      [class.dark:text-slate-400]="currentView() !== 'settings'"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+      <span class="text-[10px] font-medium">Ustawienia</span>
+    </button>
+  </nav>
+
+</div>
